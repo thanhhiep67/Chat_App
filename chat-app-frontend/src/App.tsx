@@ -1,7 +1,7 @@
 import * as React from 'react';
 import Chat from './components/Chat';
 import { ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
-
+import './App.css';
 
 const App: React.FC = () => {
   const [userName, setUsername] = React.useState<string>("");

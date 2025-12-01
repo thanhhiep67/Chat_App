@@ -1,6 +1,8 @@
 package com.chat.chatapp.controller;
 
 import com.chat.chatapp.model.ChatMessage;
+import com.chat.chatapp.model.JoinMessage;
+import com.chat.chatapp.model.LeaveMessage;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Controller;
@@ -18,9 +20,9 @@ public class ChatController {
 
     @MessageMapping("/leave")
     @SendTo("/topic/messages")
-    public ChatMessage leave(String username) {
+    public ChatMessage leave(LeaveMessage user) {
         ChatMessage newMessage = new ChatMessage();
-        newMessage.setContent(username + " đã rời phòng chat.");
+        newMessage.setContent(user.getUsername() + " đã rời phòng chat.");
         newMessage.setSender("System");
         newMessage.setType("LEAVE");
 
@@ -29,12 +31,12 @@ public class ChatController {
 
     @MessageMapping("/join")
     @SendTo("/topic/messages")
-    public ChatMessage join(String username) {
+    public ChatMessage join(JoinMessage msg) {
         ChatMessage newMessage = new ChatMessage();
-        newMessage.setContent(username + " đã tham gia phòng chat.");
+        newMessage.setContent(msg.getUsername() + " đã tham gia phòng chat.");
         newMessage.setSender("System");
         newMessage.setType("JOIN");
-
         return newMessage;
     }
+
 }
