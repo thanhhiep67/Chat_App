@@ -15,43 +15,49 @@ interface ChatMessage {
 }
 
 const Chat: React.FC<ChatProps> = ({ userName, onLogout }) => {
-  const [message, setMessage] = useState<string>("");
+  const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
   const [connected, setConnected] = useState(false);
+
   const clientRef = useRef<Client | null>(null);
   const messageEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Auto scroll
+  // ---- Auto Scroll ----
   useEffect(() => {
     messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // STOMP client setup
+  // ---- WebSocket Setup ----
   useEffect(() => {
     const client = new Client({
       brokerURL: "ws://localhost:8080/chat-websocket",
       reconnectDelay: 500,
       heartbeatIncoming: 10000,
       heartbeatOutgoing: 10000,
+
       onConnect: () => {
-        console.log("Connected to WebSocket server");
+        console.log("Connected!");
         setConnected(true);
 
-        // Subscribe to message topic
+        // 1) Subscribe message room
         client.subscribe("/topic/messages", (msg: StompMessage) => {
-          const body: ChatMessage = JSON.parse(msg.body);
+          const body = JSON.parse(msg.body) as ChatMessage;
           setMessages((prev) => [...prev, body]);
         });
 
-        // Send join message
+        // 2) Subscribe online users
+        client.subscribe("/topic/onlineUsers", (msg: StompMessage) => {
+          const users = JSON.parse(msg.body) as string[];
+          setOnlineUsers(users);
+        });
+
+        // 3) JOIN room
         client.publish({
           destination: "/app/join",
           body: JSON.stringify({ username: userName }),
         });
-      },
-      onStompError: (frame) => {
-        console.error("STOMP ERROR:", frame);
       },
     });
 
@@ -63,6 +69,7 @@ const Chat: React.FC<ChatProps> = ({ userName, onLogout }) => {
     };
   }, [userName]);
 
+  // ---- Send Message ----
   const sendMessage = () => {
     if (!connected || !clientRef.current || message.trim() === "") return;
 
@@ -85,12 +92,41 @@ const Chat: React.FC<ChatProps> = ({ userName, onLogout }) => {
     if (e.key === "Enter") sendMessage();
   };
 
+  // ---- Logout ----
+  const handleLogout = () => {
+    if (clientRef.current?.connected) {
+      clientRef.current.publish({
+        destination: "/app/leave",
+        body: JSON.stringify({ username: userName }),
+      });
+      clientRef.current.deactivate();
+    }
+
+    onLogout?.();
+  };
+
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-100">
       <div className="flex flex-col bg-white rounded-xl shadow-lg w-full sm:w-[29rem] h-[700px]">
+
         {/* Header */}
-        <div className="flex justify-between items-center bg-blue-500 text-white p-4 rounded-t-xl text-center">
+        <div className="bg-blue-500 text-white p-4 rounded-t-xl text-center text-lg font-semibold">
           Chat Room
+        </div>
+
+        {/* Online Users */}
+        <div className="p-3 bg-gray-200 border-b text-sm">
+          <strong>Online:</strong>
+          <div className="flex flex-wrap gap-2 mt-2">
+            {onlineUsers.map((u, idx) => (
+              <span
+                key={idx}
+                className="px-2 py-1 bg-green-100 text-green-700 rounded-full"
+              >
+                🟢 {u}
+              </span>
+            ))}
+          </div>
         </div>
 
         {/* Messages */}
@@ -98,13 +134,9 @@ const Chat: React.FC<ChatProps> = ({ userName, onLogout }) => {
           {messages.map((msg, index) => (
             <div key={index}>
               {msg.type === "JOIN" ? (
-                <div className="text-center text-gray-500 italic">
-                  {msg.content}
-                </div>
+                <p className="text-center text-gray-500 italic">{msg.content}</p>
               ) : msg.type === "LEAVE" ? (
-                <div className="text-center text-red-500 italic">
-                  {msg.content}
-                </div>
+                <p className="text-center text-red-500 italic">{msg.content}</p>
               ) : (
                 <Message
                   sender={msg.sender}
@@ -141,21 +173,7 @@ const Chat: React.FC<ChatProps> = ({ userName, onLogout }) => {
         {/* Logout */}
         <div className="p-4 text-center border-t bg-gray-50">
           <button
-            onClick={() => {
-              // Gửi leave message trước
-              if (clientRef.current && clientRef.current.connected) {
-                clientRef.current.publish({
-                  destination: "/app/leave",
-                  body: JSON.stringify({ username: userName }),
-                });
-
-                // Ngắt kết nối STOMP
-                clientRef.current.deactivate();
-              }
-
-              // Gọi callback onLogout để chuyển trang
-              if (onLogout) onLogout();
-            }}
+            onClick={handleLogout}
             className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
           >
             Logout

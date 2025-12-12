@@ -13,6 +13,7 @@ public class ChatMessage {
     private String sender;
     private String content;
     private String type;
-    public String getUsername() { return sender; }
-    public void setUsername(String username) { this.sender = username; }
+
+
+
 }
