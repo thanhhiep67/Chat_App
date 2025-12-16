@@ -59,4 +59,15 @@ public class ChatController {
         // 2. Broadcast danh sách online
         messagingTemplate.convertAndSend("/topic/onlineUsers", onlineUserService.getOnlineUsers());
     }
+
+    @MessageMapping("/private-message")
+    public void sendPrivateMessage(ChatMessage message) {
+        // gửi tin nhắn tới user cụ thể
+        messagingTemplate.convertAndSendToUser(
+                message.getReceiver(),        // username người nhận
+                "/queue/messages",            // queue riêng của user
+                message                       // nội dung tin nhắn
+        );
+        System.out.println(message.getReceiver());
+    }
 }
