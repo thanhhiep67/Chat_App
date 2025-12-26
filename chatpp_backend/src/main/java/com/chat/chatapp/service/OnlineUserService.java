@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.Set;
 
 
@@ -24,9 +25,7 @@ public class OnlineUserService {
     }
 
     public Set<String> getOnlineUsers() {
-        return redisTemplate.opsForSet().members(ONLINE_SET);
+        Set<String> members = redisTemplate.opsForSet().members(ONLINE_SET);
+        return members == null ? Collections.emptySet() : members;
     }
 }
-
-
-

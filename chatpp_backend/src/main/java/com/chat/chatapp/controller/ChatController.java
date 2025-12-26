@@ -10,6 +10,9 @@ import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
+// The @Controller annotation is necessary here for Spring to discover this as a bean.
+// There is no need for optimization in this one-line usage, unless you are not using Spring MVC/Spring WebSocket at all, in which case you could remove it. 
+// However, for your use case, this is the correct minimal annotation:
 @Controller
 public class ChatController {
 
@@ -71,3 +74,4 @@ public class ChatController {
         System.out.println(message.getReceiver());
     }
 }
+
